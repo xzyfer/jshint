@@ -1,6 +1,6 @@
 {
 	"name":     "jshint",
-	"version":  "1.1.0",
+	"version":  "1.1.1-rc1",
 	"homepage": "http://jshint.com/",
 	"description": "Static analysis tool for JavaScript",
 
@@ -31,7 +31,7 @@
 	},
 
 	"devDependencies": {
-		"jshint":     "1.1.0",
+		"jshint":     "git://github.com/xzyfer/jshint.git#1.1.1-rc1",
 		"shelljs":    "0.1.x",
 		"browserify": "1.16.1",
 		"coveraje":   "0.2.x",
