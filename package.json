@@ -33,12 +33,19 @@
 	"devDependencies": {
 		"jshint":     "git://github.com/xzyfer/jshint.git#1.1.1-rc1",
 		"shelljs":    "0.1.x",
-		"browserify": "1.16.1",
+		"browserify": "2.12.x",
 		"coveraje":   "0.2.x",
 		"nodeunit":   "0.7.x",
 		"sinon":      "1.6.x",
 		"console-browserify": "0.1.x"
 	},
+
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://github.com/jshint/jshint/blob/master/LICENSE"
+		}
+	],
 
 	"preferGlobal": true
 }
