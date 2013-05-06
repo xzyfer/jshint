@@ -15,7 +15,7 @@ exports.unsafe = function (test) {
 
 	TestRun(test)
 		.addError(1, "This character may get silently deleted by one or more browsers.")
-		.test(code);
+		.test(code, {es3: true});
 
 	test.done();
 };
@@ -30,12 +30,12 @@ exports.other = function (test) {
 		.addError(1, "Unexpected '\\'.")
 		.addError(2, "Unexpected early end of program.")
 		.addError(2, "Expected an identifier and instead saw '(end)'.")
-		.test(code);
+		.test(code, {es3: true});
 
 	// GH-818
 	TestRun(test)
 		.addError(1, "Expected an identifier and instead saw ')'.")
-		.test("if (product < ) {}");
+		.test("if (product < ) {}", {es3: true});
 
 	test.done();
 };
@@ -55,8 +55,8 @@ exports.confusingOps = function (test) {
 		.addError(2, "Confusing pluses.")
 		.addError(3, "Confusing minuses.")
 		.addError(4, "Confusing pluses.");
-	run.test(code);
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -74,15 +74,15 @@ exports.plusplus = function (test) {
 	run = TestRun(test)
 		.addError(1, "Unexpected use of '++'.")
 		.addError(2, "Unexpected use of '--'.");
-	run.test(code, { plusplus: true });
-	run.test(code, { plusplus: true, es5: true });
+	run.test(code, { plusplus: true, es3: true });
+	run.test(code, { plusplus: true }); // es5
 	run.test(code, { plusplus: true, esnext: true });
 	run.test(code, { plusplus: true, moz: true });
 
 	run = TestRun(test)
 		.addError(2, "Bad operand.");
-	run.test(code, { plusplus: false });
-	run.test(code, { plusplus: false, es5: true });
+	run.test(code, { plusplus: false, es3: true });
+	run.test(code, { plusplus: false }); // es5
 	run.test(code, { plusplus: false, esnext: true });
 	run.test(code, { plusplus: false, moz: true });
 
@@ -91,17 +91,27 @@ exports.plusplus = function (test) {
 
 exports.assignment = function (test) {
 	var code = [
+		"function test() {",
 		"arguments.length = 2;",
+		"arguments[0] = 3;",
+		"}",
+		"function test2() {",
+		"\"use strict\";",
+		"arguments.length = 2;",
+		"arguments[0] = 3;",
+		"}",
 		"a() = 2;",
 	];
 
 	var run = TestRun(test)
-		.addError(1, "Bad assignment.")
 		.addError(2, "Bad assignment.")
-		.addError(2, "Expected an assignment or function call and instead saw an expression.")
-		.addError(2, "Missing semicolon.");
-	run.test(code, { plusplus: true });
-	run.test(code, { plusplus: true, es5: true });
+		.addError(3, "Bad assignment.")
+		.addError(10, "Bad assignment.")
+		.addError(10, "Expected an assignment or function call and instead saw an expression.")
+		.addError(10, "Missing semicolon.");
+
+	run.test(code, { plusplus: true, es3: true });
+	run.test(code, { plusplus: true }); // es5
 	run.test(code, { plusplus: true, esnext: true });
 	run.test(code, { plusplus: true, moz: true });
 
@@ -131,7 +141,8 @@ exports.relations = function (test) {
 		.addError(7, "Confusing use of '!'.", {character : 16})
 		.addError(8, "Confusing use of '!'.", {character : 10})
 		.addError(9, "Confusing use of '!'.", {character : 10});
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -144,10 +155,12 @@ exports.options = function (test) {
 		"/*members b*/",
 		"var x; x.a.b.c();",
 		"/*jshint ++ */",
+		"/*jslint indent: 0 */",
 		"/*jslint indent: -2 */",
 		"/*jslint indent: 100.4 */",
 		"/*jslint maxlen: 200.4 */",
 		"/*jslint maxerr: 300.4 */",
+		"/*jslint maxerr: 0 */",
 		"/*jslint maxerr: 20 */",
 		"/*member c:true */",
 		"/*jshint d:no */",
@@ -159,16 +172,21 @@ exports.options = function (test) {
 	var run = TestRun(test)
 		.addError(3, "Unexpected /*member 'c'.")
 		.addError(4, "Bad option: '++'.")
-		.addError(5, "Expected a small integer and instead saw '-2'.")
-		.addError(6, "Expected a small integer and instead saw '100.4'.")
-		.addError(7, "Expected a small integer and instead saw '200.4'.")
-		.addError(8, "Expected a small integer and instead saw '300.4'.")
-		.addError(11, "Bad option: 'd'.")
-		.addError(12, "Bad option value.")
-		.addError(14, "Read only.");
-	run.test(code, {es5: true});
+		.addError(5, "Expected a small integer or 'false' and instead saw '0'.")
+		.addError(6, "Expected a small integer or 'false' and instead saw '-2'.")
+		.addError(7, "Expected a small integer or 'false' and instead saw '100.4'.")
+		.addError(8, "Expected a small integer or 'false' and instead saw '200.4'.")
+		.addError(9, "Expected a small integer or 'false' and instead saw '300.4'.")
+		.addError(10, "Expected a small integer or 'false' and instead saw '0'.")
+		.addError(13, "Bad option: 'd'.")
+		.addError(14, "Bad option value.")
+		.addError(16, "Read only.");
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
+
+	TestRun(test).test(fs.readFileSync(__dirname + "/fixtures/gh988.js", "utf8"));
 
 	test.done();
 };
@@ -185,7 +203,8 @@ exports.shebang = function (test) {
 		.addError(3, "Expected an operator and instead saw '!'.")
 		.addError(3, "Expected an assignment or function call and instead saw an expression.")
 		.addError(3, "Missing semicolon.");
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -217,7 +236,7 @@ exports.numbers = function (test) {
 		.addError(7, "Don't use extra leading zeros '0033'.")
 		.addError(8, "A trailing decimal point can be confused with a dot: '3.'.")
 		.addError(9, "A dot following a number can be confused with a decimal point.")
-		.test(code);
+		.test(code, {es3: true});
 
 	// Octals are prohibited in strict mode.
 	TestRun(test)
@@ -252,7 +271,8 @@ exports.comments = function (test) {
 	var run = TestRun(test)
 		.addError(3, "Unbegun comment.")
 		.addError(4, "Unclosed comment.");
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -315,19 +335,20 @@ exports.regexp = function (test) {
 		.addError(20, "Invalid regular expression.")
 		.addError(21, "Invalid regular expression.")
 		.addError(24, "Unclosed regular expression.");
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
 	
-	TestRun(test).test("var y = Math.sqrt(16) / 180;");
-	TestRun(test).test("var y = Math.sqrt(16) / 180;", {es5: true});
+	TestRun(test).test("var y = Math.sqrt(16) / 180;", {es3: true});
+	TestRun(test).test("var y = Math.sqrt(16) / 180;", {}); // es5
 	TestRun(test).test("var y = Math.sqrt(16) / 180;", {esnext: true});
 	TestRun(test).test("var y = Math.sqrt(16) / 180;", {moz: true});
 
 	// GH-803
-	TestRun(test).test("var x = [1]; var y = x[0] / 180;");
-	TestRun(test).test("var x = [1]; var y = x[0] / 180;", {es5: true});
+	TestRun(test).test("var x = [1]; var y = x[0] / 180;", {es3: true});
+	TestRun(test).test("var x = [1]; var y = x[0] / 180;", {}); // es5
 	TestRun(test).test("var x = [1]; var y = x[0] / 180;", {esnext: true});
 	TestRun(test).test("var x = [1]; var y = x[0] / 180;", {moz: true});
 
@@ -336,32 +357,24 @@ exports.regexp = function (test) {
 
 exports.testRegexRegressions = function (test) {
 	// GH-536
-	TestRun(test).test("str /= 5;", {}, { str: true });
-	TestRun(test).test("str /= 5;", {es5: true}, { str: true });
+	TestRun(test).test("str /= 5;", {es3: true}, { str: true });
+	TestRun(test).test("str /= 5;", {}, { str: true }); // es5
 	TestRun(test).test("str /= 5;", {esnext: true}, { str: true });
 	TestRun(test).test("str /= 5;", {moz: true}, { str: true });
 
-	TestRun(test).test("str = str.replace(/=/g, '');", 
-						{}, { str: true });
-	TestRun(test).test("str = str.replace(/=/g, '');",
-						{es5: true}, { str: true });
-	TestRun(test).test("str = str.replace(/=/g, '');",
-						{esnext: true}, { str: true });
-	TestRun(test).test("str = str.replace(/=/g, '');",
-						{moz: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=/g, '');",  {es3: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=/g, '');", {}, { str: true }); // es5
+	TestRun(test).test("str = str.replace(/=/g, '');", {esnext: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=/g, '');", {moz: true}, { str: true });
 
-	TestRun(test).test("str = str.replace(/=abc/g, '');", 
-						{}, { str: true });
-	TestRun(test).test("str = str.replace(/=abc/g, '');", 
-						{es5: true}, { str: true });
-	TestRun(test).test("str = str.replace(/=abc/g, '');",
-						{esnext: true}, { str: true });
-	TestRun(test).test("str = str.replace(/=abc/g, '');",
-						{moz: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=abc/g, '');", {es3: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=abc/g, '');", {}, { str: true }); // es5
+	TestRun(test).test("str = str.replace(/=abc/g, '');", {esnext: true}, { str: true });
+	TestRun(test).test("str = str.replace(/=abc/g, '');", {moz: true}, { str: true });
 
 	// GH-538
-	TestRun(test).test("var exp = /function(.*){/gi;");
-	TestRun(test).test("var exp = /function(.*){/gi;", {es5: true});
+	TestRun(test).test("var exp = /function(.*){/gi;", {es3: true});
+	TestRun(test).test("var exp = /function(.*){/gi;", {}); // es5
 	TestRun(test).test("var exp = /function(.*){/gi;", {esnext: true});
 	TestRun(test).test("var exp = /function(.*){/gi;", {moz: true});
 
@@ -383,8 +396,8 @@ exports.strings = function (test) {
 		.addError(2, "Bad or unnecessary escaping.")
 		.addError(5, "Unclosed string.")
 		.addError(5, "Missing semicolon.");
-	run.test(code);
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -404,8 +417,8 @@ exports.ownProperty = function (test) {
 		.addError(2, "'hasOwnProperty' is a really bad name.")
 		.addError(3, "'hasOwnProperty' is a really bad name.")
 		.addError(3, "['hasOwnProperty'] is better written in dot notation.");
-	run.test(code);
-	run.test(code, {es5: true});
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
 	run.test(code, {esnext: true});
 	run.test(code, {moz: true});
 
@@ -436,8 +449,8 @@ exports.jsonMode = function (test) {
 		.addError(4, "Strings must use doublequote.")
 		.addError(5, "Avoid EOL escaping.")
 		.addError(7, "Avoid 0x-.");
-	run.test(code, {multistr: true});
-	run.test(code, {multistr: true, es5: true});
+	run.test(code, {multistr: true, es3: true});
+	run.test(code, {multistr: true}); // es5
 	run.test(code, {multistr: true, esnext: true});
 	run.test(code, {multistr: true, moz: true});
 
@@ -463,7 +476,7 @@ exports.comma = function (test) {
 		.addError(30, "Expected an assignment or function call and instead saw an expression.")
 		.addError(36, "Unexpected 'if'.")
 		.addError(44, "Unexpected '}'.")
-		.test(src);
+		.test(src, {es3: true});
 
 	// Regression test (GH-56)
 	TestRun(test)
@@ -473,7 +486,7 @@ exports.comma = function (test) {
 	// Regression test (GH-363)
 	TestRun(test)
 		.addError(1, "Extra comma. (it breaks older versions of IE)")
-		.test("var f = [1,];");
+		.test("var f = [1,];", {es3: true});
 
 	test.done();
 };
@@ -489,8 +502,8 @@ exports.withStatement = function (test) {
 		.addError(13, "'with' is not allowed in strict mode.")
 		.addError(13, "Missing space after ')'.")
 		.addError(13, "Unexpected space after '2'.");
-	run.test(src, {white: true});
-	run.test(src, {white: true, es5: true});
+	run.test(src, {white: true, es3: true});
+	run.test(src, {white: true}); // es5
 	run.test(src, {white: true, esnext: true});
 	run.test(src, {white: true, moz: true});
 
@@ -500,8 +513,8 @@ exports.withStatement = function (test) {
 		.addError(13, "'with' is not allowed in strict mode.")
 		.addError(13, "Missing space after ')'.")
 		.addError(13, "Unexpected space after '2'.");
-	run.test(src, {white: true, withstmt: true});
-	run.test(src, {white: true, withstmt: true, es5: true});
+	run.test(src, {white: true, withstmt: true, es3: true});
+	run.test(src, {white: true, withstmt: true}); // es5
 	run.test(src, {white: true, withstmt: true, esnext: true});
 	run.test(src, {white: true, withstmt: true, moz: true});
 
@@ -514,8 +527,8 @@ exports.blocks = function (test) {
 	var run = TestRun(test)
 		.addError(29, "Unmatched \'{\'.")
 		.addError(31, "Unmatched \'{\'.");
-	run.test(src);
-	run.test(src, {es5: true});
+	run.test(src, {es3: true});
+	run.test(src, {}); // es5
 	run.test(src, {esnext: true});
 	run.test(src, {moz: true});
 
@@ -554,8 +567,8 @@ exports.exported = function (test) {
 		.addError(13, "'unusedDeclaration' is defined but never used.")
 		.addError(14, "'unusedExpression' is defined but never used.")
 		.addError(17, "'cannotBeExported' is defined but never used.");
-	run.test(src, { unused: true });
-	run.test(src, {es5: true, unused: true });
+	run.test(src, {es3: true, unused: true });
+	run.test(src, {unused: true }); // es5
 	run.test(src, {esnext: true, unused: true });
 	run.test(src, {moz: true, unused: true });
 
@@ -565,7 +578,7 @@ exports.exported = function (test) {
 exports.testIdentifiers = function (test) {
 	var src = fs.readFileSync(__dirname + "/fixtures/identifiers.js", "utf8");
 
-	TestRun(test).test(src);
+	TestRun(test).test(src, {es3: true});
 	var run = TestRun(test)
 		.addError(1, "'ascii' is defined but never used.")
 		.addError(2, "'num1' is defined but never used.")
@@ -574,8 +587,8 @@ exports.testIdentifiers = function (test) {
 		.addError(5, "'привет' is defined but never used.")
 		.addError(6, "'\\u1d44' is defined but never used.")
 		.addError(7, "'encoded\\u1d44' is defined but never used.");
-	run.test(src, { unused: true });
-	run.test(src, {es5: true, unused: true });
+	run.test(src, {es3: true, unused: true });
+	run.test(src, {unused: true }); // es5
 	run.test(src, {esnext: true, unused: true });
 	run.test(src, {moz: true, unused: true });
 	
@@ -586,7 +599,7 @@ exports.testIdentifiers = function (test) {
 exports["regression for GH-878"] = function (test) {
 	var src = fs.readFileSync(__dirname + "/fixtures/gh878.js", "utf8");
 
-	TestRun(test).test(src);
+	TestRun(test).test(src, {es3: true});
 
 	test.done();
 };
@@ -603,7 +616,7 @@ exports["regression for GH-910"] = function (test) {
 		.addError(1, "Unmatched '('.")
 		.addError(1, "Expected an assignment or function call and instead saw an expression.")
 		.addError(1, "Missing semicolon.")
-		.test(src, { nonew: true });
+		.test(src, { es3: true, nonew: true });
 	test.done();
 };
 
@@ -759,7 +772,7 @@ exports["test: destructuring var as es5"] = function (test) {
 		.addError(5,  "'o' is defined but never used.")
 		.addError(6,  "'d' is defined but never used.")
 		.addError(8,  "'bar' is defined but never used.")
-		.test(code, {es5: true, unused: true, undef: true});
+		.test(code, {unused: true, undef: true}); // es5
 
 	test.done();
 };
@@ -796,7 +809,7 @@ exports["test: destructuring var as legacy JS"] = function (test) {
 		.addError(5,  "'o' is defined but never used.")
 		.addError(6,  "'d' is defined but never used.")
 		.addError(8,  "'bar' is defined but never used.")
-		.test(code, {unused: true, undef: true});
+		.test(code, {es3: true, unused: true, undef: true});
 
 	test.done();
 };
@@ -908,7 +921,7 @@ exports["test: destructuring const as es5"] = function (test) {
 		.addError(8, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(8, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(3, "'z' is not defined.")
-		.test(code, {es5: true, unused: true, undef: true});
+		.test(code, {unused: true, undef: true}); // es5
 
 	test.done();
 };
@@ -944,7 +957,7 @@ exports["test: destructuring const as legacy JS"] = function (test) {
 		.addError(8, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(8, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(3, "'z' is not defined.")
-		.test(code, {unused: true, undef: true});
+		.test(code, {es3: true, unused: true, undef: true});
 
 	test.done();
 };
@@ -973,7 +986,7 @@ exports["test: destructuring const errors"] = function (test) {
 		.addError(5, "Expected an identifier and instead saw ']'.")
 		.addError(5, "Expected an assignment or function call and instead saw an expression.")
 		.addError(5, "Missing semicolon.")
-		.test(code, {esnext: true, unused: true, undef: true});
+		.test(code, {es3: true, esnext: true, unused: true, undef: true});
 
 	test.done();
 };
@@ -1035,7 +1048,7 @@ exports["test: destructuring globals as es5"] = function (test) {
 		.addError(6, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(7, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(8, "'destructuring assignment' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true});
+		.test(code, {unused: true, undef: true}); // es5
 	
 	test.done();
 };
@@ -1060,7 +1073,7 @@ exports["test: destructuring globals as legacy JS"] = function (test) {
 		.addError(6, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(7, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(8, "'destructuring assignment' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true});
+		.test(code, {es3: true, unused: true, undef: true});
 	
 	test.done();
 };
@@ -1151,7 +1164,7 @@ exports["test: destructuring assign of empty values as es5"] = function (test) {
 		.addError(3, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(3, "'e' is defined but never used.")
 		.addError(3, "'f' is defined but never used.")
-		.test(code, {es5: true, unused: true, undef: true});
+		.test(code, {unused: true, undef: true}); // es5
 
 	test.done();
 };
@@ -1172,7 +1185,7 @@ exports["test: destructuring assign of empty values as JS legacy"] = function (t
 		.addError(3, "'e' is defined but never used.")
 		.addError(3, "'f' is defined but never used.")
 		.addError(3, "Extra comma. (it breaks older versions of IE)")
-		.test(code, {unused: true, undef: true});
+		.test(code, {es3: true, unused: true, undef: true});
 
 	test.done();
 };
@@ -1233,7 +1246,7 @@ exports["test: let statement as es5"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(5, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -1255,7 +1268,7 @@ exports["test: let statement as legacy JS"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(5, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1325,7 +1338,7 @@ exports["test: let statement out of scope as es5"] = function (test) {
 		.addError(3, "'y' is defined but never used.")
 		.addError(7, "'z' is not defined.")
 		.addError(9, "'y' is not defined.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -1350,7 +1363,7 @@ exports["test: let statement out of scope as legacy JS"] = function (test) {
 		.addError(3, "'y' is defined but never used.")
 		.addError(7, "'z' is not defined.")
 		.addError(9, "'y' is not defined.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1417,7 +1430,7 @@ exports["test: let statement in functions as es5"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(5, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -1441,7 +1454,7 @@ exports["test: let statement in functions as legacy JS"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(5, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1496,7 +1509,7 @@ exports["test: let statement not in scope as esnext"] = function (test) {
 		.addError(8, "'z' is not defined.")
 		.addError(10, "'y' is not defined.")
 		.addError(11, "'bar' is not defined.")
-		.test(code, {esnext: true, es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {esnext: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1527,7 +1540,7 @@ exports["test: let statement not in scope as es5"] = function (test) {
 		.addError(8, "'z' is not defined.")
 		.addError(10, "'y' is not defined.")
 		.addError(11, "'bar' is not defined.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -1558,7 +1571,7 @@ exports["test: let statement not in scope as legacy JS"] = function (test) {
 		.addError(8, "'z' is not defined.")
 		.addError(10, "'y' is not defined.")
 		.addError(11, "'bar' is not defined.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1640,7 +1653,7 @@ exports["test: let statement in for loop as es5"] = function (test) {
 		.addError(8, "'let' is only available in JavaScript 1.7.")
 		.addError(11, "'let' is only available in JavaScript 1.7.")
 		.addError(14, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print", "Iterator"]});
+		.test(code, {unused: true, undef: true, predef: ["print", "Iterator"]}); // es5
 
 	test.done();
 };
@@ -1671,7 +1684,7 @@ exports["test: let statement in for loop as legacy JS"] = function (test) {
 		.addError(8, "'let' is only available in JavaScript 1.7.")
 		.addError(11, "'let' is only available in JavaScript 1.7.")
 		.addError(14, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print", "Iterator"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print", "Iterator"]});
 
 	test.done();
 };
@@ -1775,7 +1788,7 @@ exports["test: let statement in destructured for loop as es5"] = function (test)
 	TestRun(test)
 		.addError(21, "'let' is only available in JavaScript 1.7.")
 		.addError(21, "'destructuring expression' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -1810,7 +1823,7 @@ exports["test: let statement in destructured for loop as legacy JS"] = function 
 	TestRun(test)
 		.addError(21, "'let' is only available in JavaScript 1.7.")
 		.addError(21, "'destructuring expression' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -1885,8 +1898,8 @@ exports["test: let statement (as seen in jetpack) as es5"] = function (test) {
 		.addError(1, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let block' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {es5: true, unused: true, undef: true,
-					 predef: ["require", "xferable", "options"]});
+		.test(code, {unused: true, undef: true,
+					 predef: ["require", "xferable", "options"]}); // es5
 	test.done();
 };
 exports["test: let statement (as seen in jetpack) as legacy JS"] = function (test) {
@@ -1912,7 +1925,7 @@ exports["test: let statement (as seen in jetpack) as legacy JS"] = function (tes
 		.addError(1, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(3, "'let' is only available in JavaScript 1.7.")
 		.addError(3, "'let block' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {unused: true, undef: true,
+		.test(code, {es3: true, unused: true, undef: true,
 					 predef: ["require", "xferable", "options"]});
 	test.done();
 };
@@ -1967,7 +1980,7 @@ exports["test: let block and let expression as es5"] = function (test) {
 		.addError(4, "'let expressions' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(4, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 	test.done();
 };
 exports["test: let block and let expression as legacy JS"] = function (test) {
@@ -1988,7 +2001,7 @@ exports["test: let block and let expression as legacy JS"] = function (test) {
 		.addError(4, "'let expressions' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(4, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 	test.done();
 };
 
@@ -2045,7 +2058,7 @@ exports["test destructuring function as es5"] = function (test) {
 		.addError(1, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(4, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(4, "'destructuring expression' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2066,7 +2079,7 @@ exports["test destructuring function as legacy JS"] = function (test) {
 		.addError(1, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(4, "'destructuring expression' is only available in JavaScript 1.7.")
 		.addError(4, "'destructuring expression' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2112,7 +2125,7 @@ exports["test: invalid for each as ES5"] = function (test) {
 		.addError(1, "Invalid for each loop.")
 		.addError(1, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
 		.addError(1, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2127,7 +2140,7 @@ exports["test: invalid for each as legacy JS"] = function (test) {
 		.addError(1, "Invalid for each loop.")
 		.addError(1, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
 		.addError(1, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2136,7 +2149,6 @@ exports["test: esnext generator"] = function (test) {
 	// example taken from https://developer.mozilla.org/en-US/docs/JavaScript/New_in_JavaScript/1.7
 	var code = [
 		"function* fib() {",
-
 		"	var i = 0, j = 1;",
 		"	while (true) {",
 		"		yield i;",
@@ -2193,7 +2205,7 @@ exports["test: esnext generator as es5"] = function (test) {
 		.addError(1, "'function*' is only available in ES6 (use esnext option).")
 		.addError(4, "'yield' is only available in JavaScript 1.7.")
 		.addError(5, "'destructuring assignment' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2216,7 +2228,7 @@ exports["test: esnext generator as legacy JS"] = function (test) {
 		.addError(1, "'function*' is only available in ES6 (use esnext option).")
 		.addError(4, "'yield' is only available in JavaScript 1.7.")
 		.addError(5, "'destructuring assignment' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2301,7 +2313,7 @@ exports["test: mozilla generator as es5"] = function (test) {
 		.addError(4, "'yield' is only available in JavaScript 1.7.")
 		.addError(5, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(9, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print", "Iterator"]});
+		.test(code, {unused: true, undef: true, predef: ["print", "Iterator"]}); // es5
 
 	test.done();
 };
@@ -2323,7 +2335,7 @@ exports["test: mozilla generator as legacy JS"] = function (test) {
 		.addError(4, "'yield' is only available in JavaScript 1.7.")
 		.addError(5, "'destructuring assignment' is only available in JavaScript 1.7.")
 		.addError(9, "'let' is only available in JavaScript 1.7.")
-		.test(code, {unused: true, undef: true, predef: ["print", "Iterator"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print", "Iterator"]});
 
 	test.done();
 };
@@ -2394,7 +2406,7 @@ exports["test: array comprehension as es5"] = function (test) {
 		.addError(7, "'array comprehension' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(7, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {es5: true, unused: true, undef: true, predef: ["print"]});
+		.test(code, {unused: true, undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2420,7 +2432,7 @@ exports["test: array comprehension as legacy JS"] = function (test) {
 		.addError(7, "'array comprehension' is only available in Mozilla JavaScript extensions (use " +
 			"moz option).")
 		.addError(7, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {unused: true, undef: true, predef: ["print"]});
+		.test(code, {es3: true, unused: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2472,7 +2484,7 @@ exports['test array comprehension with dest array at global scope as es5'] = fun
 		.addError(3, "'array comprehension' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(3, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {es5: true, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2492,7 +2504,7 @@ exports['test array comprehension with dest array at global scope as JS legacy']
 		.addError(3, "'array comprehension' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(3, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {undef: true, predef: ["print"]});
+		.test(code, {es3: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2532,7 +2544,7 @@ exports["test: array comprehension imbrication with dest array as es5"] = functi
 		.addError(1, "'array comprehension' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(1, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {es5: true, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2547,7 +2559,7 @@ exports["test: array comprehension imbrication with dest array as legacy JS"] = 
 		.addError(1, "'array comprehension' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
 		.addError(1, "'for each' is only available in Mozilla JavaScript extensions (use moz option).")
-		.test(code, {undef: true, predef: ["print"]});
+		.test(code, {es3: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2604,7 +2616,7 @@ exports["try catch filters as es5"] = function (test) {
 	TestRun(test)
 		.addError(4, "'catch filter' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
-		.test(code, {es5: true, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2620,7 +2632,7 @@ exports["try catch filters as legacy JS"] = function (test) {
 	TestRun(test)
 		.addError(4, "'catch filter' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
-		.test(code, {undef: true, predef: ["print"]});
+		.test(code, {es3: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2632,7 +2644,7 @@ exports["test: function closure expression"] = function (test) {
 		"}"
 	];
 	TestRun(test)
-		.test(code, {moz: true, undef: true});
+		.test(code, {es3: true, moz: true, undef: true});
 
 	test.done();
 };
@@ -2656,7 +2668,7 @@ exports["test: function closure expression as es5"] = function (test) {
 	TestRun(test)
 		.addError(2, "'function closure expressions' is only available in Mozilla JavaScript " +
 			"extensions (use moz option).")
-		.test(code, {es5: true, undef: true});
+		.test(code, {undef: true}); // es5
 
 	test.done();
 };
@@ -2668,7 +2680,7 @@ exports["test: function closure expression as legacy JS"] = function (test) {
 	TestRun(test)
 		.addError(2, "'function closure expressions' is only available in Mozilla JavaScript " +
 			"extensions (use moz option).")
-		.test(code, {undef: true});
+		.test(code, {es3: true, undef: true});
 
 	test.done();
 };
@@ -2697,7 +2709,7 @@ exports["test: for of as es5"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(4, "'for of' is only available in JavaScript 1.7.")
 		.addError(4, "'let' is only available in JavaScript 1.7.")
-		.test(code, {es5: true, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2713,7 +2725,7 @@ exports["test: for of as legacy JS"] = function (test) {
 		.addError(1, "'let' is only available in JavaScript 1.7.")
 		.addError(4, "'for of' is only available in JavaScript 1.7.")
 		.addError(4, "'let' is only available in JavaScript 1.7.")
-		.test(code, {esnext: false, es5: false, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2769,7 +2781,7 @@ exports["test: try multi-catch as es5"] = function (test) {
 	TestRun(test)
 		.addError(5, "'multiple catch blocks' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
-		.test(code, {es5: true, undef: true, predef: ["print"]});
+		.test(code, {undef: true, predef: ["print"]}); // es5
 
 	test.done();
 };
@@ -2789,7 +2801,7 @@ exports["test: try multi-catch as legacy JS"] = function (test) {
 	TestRun(test)
 		.addError(5, "'multiple catch blocks' is only available in Mozilla JavaScript extensions " +
 			"(use moz option).")
-		.test(code, {undef: true, predef: ["print"]});
+		.test(code, {es3: true, undef: true, predef: ["print"]});
 
 	test.done();
 };
@@ -2878,8 +2890,8 @@ exports["automatic comma insertion GH-950"] = function (test) {
 		.addError(9, "Label 'a' on 1 statement.")
 		.addError(9, "Expected an assignment or function call and instead saw an expression.");
 	
-	run.test(code, {asi: true});
-	run.test(code, {es5: true, asi: true});
+	run.test(code, {es3: true, asi: true});
+	run.test(code, {asi: true}); // es5
 	run.test(code, {esnext: true, asi: true});
 	run.test(code, {moz: true, asi: true});
 
@@ -2894,10 +2906,142 @@ exports["automatic comma insertion GH-950"] = function (test) {
 		.addError(9, "Expected an assignment or function call and instead saw an expression.")
 		.addError(9, "Missing semicolon.");
 
-	run.test(code, {asi: false});
-	run.test(code, {es5: true, asi: false});
+	run.test(code, {es3: true, asi: false});
+	run.test(code, {asi: false}); // es5
 	run.test(code, {esnext: true, asi: false});
 	run.test(code, {moz: true, asi: false});
+
+	test.done();
+};
+
+exports["fat arrows support"] = function (test) {
+	var code = [
+		"let empty = () => {};",
+		"let identity = x => x;",
+		"let square = x => x * x;",
+		"let key_maker = val => ({key: val});",
+		"let odds = evens.map(v => v + 1);",
+		"let fives = []; nats.forEach(v => { if (v % 5 === 0) fives.push(v); });",
+
+		"let block = (x,y,{z: t}) => {",
+		"	print(x,y,z);",
+		"	print(j, t);",
+		"};",
+
+		// using lexical this
+		"const obj = {",
+		"  method: function () {",
+		"    return () => this;",
+		"  }",
+		"};",
+	];
+	var run = TestRun(test);
+	run.test(code, {esnext: true});
+	run.test(code, {moz: true});
+
+	run = TestRun(test)
+		.addError(1, "'let' is only available in JavaScript 1.7.")
+		.addError(1, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(2, "'let' is only available in JavaScript 1.7.")
+		.addError(2, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(3, "'let' is only available in JavaScript 1.7.")
+		.addError(3, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(4, "'let' is only available in JavaScript 1.7.")
+		.addError(4, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(5, "'let' is only available in JavaScript 1.7.")
+		.addError(5, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(6, "'let' is only available in JavaScript 1.7.")
+		.addError(6, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(7, "'let' is only available in JavaScript 1.7.")
+		.addError(7, "'destructuring expression' is only available in JavaScript 1.7.")
+		.addError(7, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		.addError(11, "'const' is only available in JavaScript 1.7.")
+		.addError(13, "'arrow function syntax (=>)' is only available in JavaScript 1.7.");
+
+	run.test(code); // es5
+	run.test(code, {es3: true});
+
+	test.done();
+};
+
+exports["concise methods support"] = function (test) {
+	var code = [
+		"var foobar = {",
+		"	foo () {",
+		"		return 'foo';",
+		"	},",
+		"	*bar () {",
+		"		yield 'bar';",
+		"	}",
+		"};"
+	];
+
+	var run = TestRun(test);
+	run.test(code, {esnext: true});
+	run.test(code, {moz: true});
+
+	run = TestRun(test)
+		.addError(2, "'concise methods' is only available in JavaScript 1.7.")
+		.addError(5, "'generator functions' is only available in JavaScript 1.7.")
+		.addError(5, "'concise methods' is only available in JavaScript 1.7.")
+		.addError(6, "'yield' is only available in JavaScript 1.7.");
+
+	run.test(code); // es5
+	run.test(code, {es3: true});
+
+	test.done();
+};
+
+exports["spread rest operator support"] = function (test) {
+	var code = [
+		// spread operator
+		"function foo(a, b, c) {",
+		"    console.log(a, b, c); ",
+		"}",
+		"var args = [ 0, 1, 2 ];",
+		"foo(...args);",
+
+		// spread operator
+		"let initial = [ 1, 2, 3, 4, 5 ];",
+		"let extended = [ ...initial, 6, 7, 8, 9 ];",
+
+		// rest operator
+		"(function foo(i, j, ...args) {",
+		"    return args;",
+		"}());",
+
+		// rest operator on a fat arrow function
+		"let bar = (...args) => args;"
+	];
+
+	var run = TestRun(test);
+	run.test(code, {esnext: true});
+	run.test(code, {moz: true});
+
+	run = TestRun(test)
+		.addError(5, "'spread/rest operator' is only available in JavaScript 1.7.")
+		.addError(6, "'let' is only available in JavaScript 1.7.")
+		.addError(7, "'let' is only available in JavaScript 1.7.")
+		.addError(7, "'spread/rest operator' is only available in JavaScript 1.7.")
+		.addError(8, "'spread/rest operator' is only available in JavaScript 1.7.")
+		 .addError(11, "'let' is only available in JavaScript 1.7.")
+		 .addError(11, "'spread/rest operator' is only available in JavaScript 1.7.")
+		 .addError(11, "'arrow function syntax (=>)' is only available in JavaScript 1.7.")
+		 .addError(11, "'spread/rest operator' is only available in JavaScript 1.7.");
+
+	test.done();
+};
+
+exports["test for GH-1010"] = function (test) {
+	var code = [
+		"var x = 20, y, z; if(x < 30) y=7, z=2; else y=5;"
+	];
+
+	var run = TestRun(test);
+	run.test(code, {es3: true});
+	run.test(code, {}); // es5
+	run.test(code, {esnext: true});
+	run.test(code, {moz: true});
 
 	test.done();
 };
